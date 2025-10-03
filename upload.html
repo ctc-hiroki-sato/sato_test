@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>受注データアップロード - 受注・出荷管理システム</title>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/upload.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>受注・出荷管理システム</h1>
+            <nav>
+                <a href="upload.html" class="active">受注アップロード</a>
+                <a href="orders.html">受注一覧</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h2>受注データアップロード</h2>
+            <p class="description">Excelファイルをアップロードして受注データを一括登録できます</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <p class="upload-text">ここにファイルをドラッグ&ドロップ</p>
+                <p class="upload-subtext">または</p>
+                <label for="fileInput" class="file-select-btn">ファイルを選択</label>
+                <input type="file" id="fileInput" accept=".xlsx,.xls" style="display: none;">
+                <p class="upload-hint">対応形式: .xlsx, .xls</p>
+            </div>
+
+            <div class="file-info" id="fileInfo" style="display: none;">
+                <div class="file-name">
+                    <span class="file-icon">📄</span>
+                    <span id="fileName"></span>
+                </div>
+                <button type="button" class="btn-remove" id="removeFileBtn">削除</button>
+            </div>
+
+            <div class="upload-actions">
+                <button type="button" class="btn btn-primary" id="uploadBtn" disabled>アップロード</button>
+                <button type="button" class="btn btn-secondary" id="clearBtn">クリア</button>
+            </div>
+        </div>
+
+        <div class="result-section" id="resultSection" style="display: none;">
+            <h3>処理結果</h3>
+            <div class="result-summary">
+                <div class="summary-item success">
+                    <span class="label">成功:</span>
+                    <span class="value" id="successCount">0</span>件
+                </div>
+                <div class="summary-item error">
+                    <span class="label">エラー:</span>
+                    <span class="value" id="errorCount">0</span>件
+                </div>
+            </div>
+
+            <div class="error-details" id="errorDetails" style="display: none;">
+                <h4>エラー詳細</h4>
+                <div class="error-list" id="errorList"></div>
+            </div>
+
+            <div class="result-actions">
+                <a href="orders.html" class="btn btn-primary">受注一覧を確認</a>
+                <button type="button" class="btn btn-secondary" id="newUploadBtn">新規アップロード</button>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3>アップロード時の注意事項</h3>
+            <ul>
+                <li>Excelファイルは以下の列を含む必要があります：
+                    <ul>
+                        <li>必須項目: 受注番号、受注日、顧客名、商品名、数量</li>
+                        <li>任意項目: 顧客コード、商品コード、単価、金額、納期、配送先住所、配送先電話番号、備考</li>
+                    </ul>
+                </li>
+                <li>受注番号が重複している場合はエラーになります</li>
+                <li>一度に最大1000件までのデータを処理できます</li>
+                <li>アップロード前に必ずデータ内容を確認してください</li>
+            </ul>
+        </div>
+
+        <div class="sample-section">
+            <h3>Excelフォーマットサンプル</h3>
+            <table class="sample-table">
+                <thead>
+                    <tr>
+                        <th>受注番号*</th>
+                        <th>受注日*</th>
+                        <th>顧客コード</th>
+                        <th>顧客名*</th>
+                        <th>商品コード</th>
+                        <th>商品名*</th>
+                        <th>数量*</th>
+                        <th>単価</th>
+                        <th>金額</th>
+                        <th>納期</th>
+                        <th>配送先住所</th>
+                        <th>配送先電話番号</th>
+                        <th>備考</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>ORD-001</td>
+                        <td>2025-10-01</td>
+                        <td>C001</td>
+                        <td>株式会社サンプル</td>
+                        <td>P001</td>
+                        <td>商品A</td>
+                        <td>10</td>
+                        <td>1000</td>
+                        <td>10000</td>
+                        <td>2025-10-10</td>
+                        <td>東京都千代田区...</td>
+                        <td>03-1234-5678</td>
+                        <td>午前中配送希望</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="note">*は必須項目です</p>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 受注・出荷管理システム</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="js/upload.js"></script>
+</body>
+</html>

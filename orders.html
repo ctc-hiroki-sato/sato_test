@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>受注一覧・出荷指示 - 受注・出荷管理システム</title>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/orders.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>受注・出荷管理システム</h1>
+            <nav>
+                <a href="upload.html">受注アップロード</a>
+                <a href="orders.html" class="active">受注一覧</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h2>受注一覧・出荷指示</h2>
+            <p class="description">受注データの検索・確認・出荷指示が可能です</p>
+        </div>
+
+        <!-- 検索フィルタ -->
+        <div class="filter-section">
+            <h3>検索・フィルタ</h3>
+            <div class="filter-grid">
+                <div class="filter-item">
+                    <label for="filterOrderNumber">受注番号</label>
+                    <input type="text" id="filterOrderNumber" placeholder="受注番号を入力">
+                </div>
+                <div class="filter-item">
+                    <label for="filterCustomer">顧客名</label>
+                    <input type="text" id="filterCustomer" placeholder="顧客名を入力">
+                </div>
+                <div class="filter-item">
+                    <label for="filterDateFrom">受注日（From）</label>
+                    <input type="date" id="filterDateFrom">
+                </div>
+                <div class="filter-item">
+                    <label for="filterDateTo">受注日（To）</label>
+                    <input type="date" id="filterDateTo">
+                </div>
+                <div class="filter-item">
+                    <label for="filterStatus">出荷ステータス</label>
+                    <select id="filterStatus">
+                        <option value="">すべて</option>
+                        <option value="未出荷">未出荷</option>
+                        <option value="出荷済">出荷済</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button type="button" class="btn btn-primary" id="searchBtn">検索</button>
+                <button type="button" class="btn btn-secondary" id="resetBtn">リセット</button>
+            </div>
+        </div>
+
+        <!-- 一覧操作 -->
+        <div class="list-actions">
+            <div class="actions-left">
+                <button type="button" class="btn btn-success" id="bulkShipBtn" disabled>
+                    選択した受注を出荷指示
+                </button>
+                <span class="selected-count" id="selectedCount">0件選択中</span>
+            </div>
+            <div class="actions-right">
+                <span class="total-count">全<span id="totalCount">0</span>件</span>
+            </div>
+        </div>
+
+        <!-- 受注一覧テーブル -->
+        <div class="table-container">
+            <table class="orders-table" id="ordersTable">
+                <thead>
+                    <tr>
+                        <th class="checkbox-col">
+                            <input type="checkbox" id="selectAll">
+                        </th>
+                        <th class="sortable" data-sort="orderNumber">受注番号</th>
+                        <th class="sortable" data-sort="orderDate">受注日</th>
+                        <th class="sortable" data-sort="customerName">顧客名</th>
+                        <th class="sortable" data-sort="productName">商品名</th>
+                        <th class="sortable" data-sort="quantity">数量</th>
+                        <th class="sortable" data-sort="deliveryDate">納期</th>
+                        <th class="sortable" data-sort="shippingStatus">ステータス</th>
+                        <th>出荷日</th>
+                        <th class="actions-col">アクション</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                    <!-- データはJavaScriptで動的に生成 -->
+                </tbody>
+            </table>
+
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <div class="empty-icon">📦</div>
+                <p class="empty-text">受注データがありません</p>
+                <a href="upload.html" class="btn btn-primary">受注データをアップロード</a>
+            </div>
+        </div>
+
+        <!-- ページネーション -->
+        <div class="pagination" id="pagination" style="display: none;">
+            <button type="button" class="btn-page" id="prevPage" disabled>前へ</button>
+            <div class="page-numbers" id="pageNumbers"></div>
+            <button type="button" class="btn-page" id="nextPage">次へ</button>
+        </div>
+    </main>
+
+    <!-- 詳細モーダル -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>受注詳細</h3>
+                <button type="button" class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- 詳細データはJavaScriptで動的に生成 -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="closeModalBtn">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 出荷指示確認モーダル -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>出荷指示確認</h3>
+                <button type="button" class="modal-close" id="closeConfirmModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="confirmShipBtn">出荷指示を実行</button>
+                <button type="button" class="btn btn-secondary" id="cancelShipBtn">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 受注・出荷管理システム</p>
+        </div>
+    </footer>
+
+    <script src="js/orders.js"></script>
+</body>
+</html>
