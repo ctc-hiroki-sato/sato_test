@@ -1,0 +1,164 @@
+name: Issue Due Date Reminder
+
+on:
+  schedule:
+    # 毎日 JST 09:00 (UTC 00:00) に実行
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  check-due-dates:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check issues with due dates
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // リマインド設定（何日前から通知するか）
+            const remindDaysBefore = [7, 3, 1, 0]; // 7日前、3日前、1日前、当日
+            
+            // 全てのオープンIssueを取得
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            console.log(`Found ${issues.data.length} open issues`);
+            
+            for (const issue of issues.data) {
+              // タイトルから期限を抽出
+              // 対応パターン: 【11/25締切】、【2025/11/25締切】、【11/25】、[11/25締切]
+              const patterns = [
+                /【(\d{1,2})\/(\d{1,2})締切?】/,
+                /【(\d{4})\/(\d{1,2})\/(\d{1,2})締切?】/,
+                /【(\d{1,2})\/(\d{1,2})】/,
+                /\[(\d{1,2})\/(\d{1,2})締切?\]/,
+                /\[(\d{4})\/(\d{1,2})\/(\d{1,2})締切?\]/
+              ];
+              
+              let dueDate = null;
+              
+              for (const pattern of patterns) {
+                const match = issue.title.match(pattern);
+                if (match) {
+                  if (match.length === 3) {
+                    // 年なしパターン (11/25)
+                    const month = parseInt(match[1]);
+                    const day = parseInt(match[2]);
+                    const year = today.getFullYear();
+                    dueDate = new Date(year, month - 1, day);
+                    
+                    // 過去の日付なら来年とみなす
+                    if (dueDate < today) {
+                      dueDate.setFullYear(year + 1);
+                    }
+                  } else if (match.length === 4) {
+                    // 年ありパターン (2025/11/25)
+                    const year = parseInt(match[1]);
+                    const month = parseInt(match[2]);
+                    const day = parseInt(match[3]);
+                    dueDate = new Date(year, month - 1, day);
+                  }
+                  break;
+                }
+              }
+              
+              if (!dueDate) {
+                continue; // 期限が見つからない場合はスキップ
+              }
+              
+              // 期限までの日数を計算
+              const diffTime = dueDate - today;
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              
+              console.log(`Issue #${issue.number}: "${issue.title}" - Due in ${diffDays} days`);
+              
+              // リマインドが必要かチェック
+              if (remindDaysBefore.includes(diffDays)) {
+                let emoji = '⏰';
+                let urgency = '';
+                
+                if (diffDays === 0) {
+                  emoji = '🚨';
+                  urgency = '**今日が締切です！**';
+                } else if (diffDays === 1) {
+                  emoji = '⚠️';
+                  urgency = '**明日が締切です！**';
+                } else if (diffDays === 3) {
+                  emoji = '📢';
+                  urgency = '締切まであと3日です。';
+                } else if (diffDays === 7) {
+                  emoji = '📅';
+                  urgency = '締切まで1週間です。';
+                }
+                
+                // 過去のリマインダーコメントをチェック
+                const comments = await github.rest.issues.listComments({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number
+                });
+                
+                const todayStr = today.toISOString().split('T')[0];
+                const alreadyReminded = comments.data.some(comment => 
+                  comment.user.login === 'github-actions[bot]' &&
+                  comment.body.includes('Due Date Reminder') &&
+                  comment.body.includes(todayStr)
+                );
+                
+                if (!alreadyReminded) {
+                  // リマインダーコメントを投稿
+                  const dueDateStr = dueDate.toLocaleDateString('ja-JP');
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    body: `${emoji} **Due Date Reminder** ${emoji}
+
+${urgency}
+
+**期限**: ${dueDateStr} (あと${diffDays}日)
+
+<!-- Due Date Reminder: ${todayStr} -->`
+                  });
+                  
+                  console.log(`✓ Reminded for Issue #${issue.number}`);
+                  
+                  // アサインされている人にメンションを追加する場合
+                  if (issue.assignees && issue.assignees.length > 0) {
+                    const mentions = issue.assignees.map(a => `@${a.login}`).join(' ');
+                    await github.rest.issues.createComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: issue.number,
+                      body: `${mentions} 👆 期限が近づいています`
+                    });
+                  }
+                } else {
+                  console.log(`- Already reminded for Issue #${issue.number} today`);
+                }
+              }
+              
+              // 期限切れのチェック
+              if (diffDays < 0) {
+                // 期限切れラベルを追加
+                try {
+                  await github.rest.issues.addLabels({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    labels: ['⏰ 期限切れ']
+                  });
+                  console.log(`Added "期限切れ" label to Issue #${issue.number}`);
+                } catch (error) {
+                  console.log(`Label "⏰ 期限切れ" might not exist, skipping...`);
+                }
+              }
+            }
